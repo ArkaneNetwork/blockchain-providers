@@ -1,13 +1,17 @@
 package network.arkane.provider.bitcoin.sign;
 
+import com.google.protobuf.ByteString;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import network.arkane.provider.JSONUtil;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
 import network.arkane.provider.bitcoin.unspent.Unspent;
 import network.arkane.provider.bitcoin.unspent.UnspentService;
+import network.arkane.provider.bitcoin.wallet.generation.BitcoinKeystore;
 import network.arkane.provider.exceptions.ArkaneException;
 import network.arkane.provider.sign.Signer;
 import network.arkane.provider.sign.domain.Signature;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Address;
@@ -19,10 +23,13 @@ import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.Transaction;
 import org.bitcoinj.core.TransactionInput;
 import org.bitcoinj.core.TransactionOutPoint;
+import org.bitcoinj.crypto.EncryptedData;
+import org.bitcoinj.crypto.KeyCrypterScrypt;
 import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
+import org.bitcoinj.wallet.Protos;
 import org.bitcoinj.wallet.UnreadableWalletException;
 import org.bitcoinj.wallet.Wallet;
 import org.springframework.stereotype.Component;
@@ -113,14 +120,10 @@ public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignab
 
     @Override
     public BitcoinSecretKey reconstructKey(String secret, String password) {
-        try {
-            Wallet wallet = Wallet.loadFromFileStream(new Base64InputStream(new ByteArrayInputStream(secret.getBytes())));
-            wallet.decrypt(password);
-            return BitcoinSecretKey.builder()
-                                   .wallet(wallet)
-                                   .build();
-        } catch (UnreadableWalletException e) {
-            throw new RuntimeException(e);
-        }
+        BitcoinKeystore ed = JSONUtil.fromJson(new String(Base64.decodeBase64(secret)), BitcoinKeystore.class);
+        Protos.ScryptParameters params = Protos.ScryptParameters.newBuilder().setSalt(ByteString.copyFrom("".getBytes())).build();
+        KeyCrypterScrypt crypter = new KeyCrypterScrypt(params);
+        EncryptedData encryptedData = new EncryptedData(ed.getInitialisationVector(), ed.getEncryptedBytes());
+        return new BitcoinSecretKey(ECKey.fromEncrypted(encryptedData, crypter, ed.getPubKey()));
     }
 }

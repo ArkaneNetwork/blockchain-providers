@@ -12,13 +12,13 @@ class BitcoinSecretGeneratorTest {
 
     @BeforeEach
     void setUp() {
-        generator = new BitcoinSecretGenerator(TestNet3Params.get());
+        generator = new BitcoinSecretGenerator();
     }
 
     @Test
     void generate() {
         BitcoinSecretKey result = generator.generate();
 
-        assertThat(result.getWallet()).isNotNull();
+        assertThat(result.getKey()).isNotNull();
     }
 }

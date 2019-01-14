@@ -20,11 +20,12 @@ public class BitcoinPrivateKeyExtractor implements SecretExtractor<BitcoinPrivat
 
     @Override
     public BitcoinSecretKey extract(BitcoinPrivateKeyExtractionRequest extractionRequest) {
-        Wallet wallet = Wallet.fromKeys(networkParameters,
-                                        Collections.singletonList(ECKey.fromPrivate(extractionRequest.getPrivateKey().getBytes())));
-        return BitcoinSecretKey.builder()
-                               .wallet(wallet)
-                               .build();
+//        Wallet wallet = Wallet.fromKeys(networkParameters,
+//                                        Collections.singletonList(ECKey.fromPrivate(extractionRequest.getPrivateKey().getBytes())));
+//        return BitcoinSecretKey.builder()
+//                               .wallet(wallet)
+//                               .build();
+        return null;
     }
 
     @Override

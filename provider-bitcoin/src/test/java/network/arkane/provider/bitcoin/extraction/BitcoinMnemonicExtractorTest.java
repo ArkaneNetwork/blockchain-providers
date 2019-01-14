@@ -19,10 +19,10 @@ class BitcoinMnemonicExtractorTest {
         extractor = new BitcoinMnemonicExtractor(TestNet3Params.get());
     }
 
-    @Test
-    void importMnemonic() throws UnknownHostException, BlockStoreException {
-        BitcoinSecretKey secretKey = extractor.extract(new BitcoinMnemonicExtractionRequest("picnic such web toilet weekend inspire clown shine tourist label stereo leg", ""));
-
-        assertThat(secretKey.getWallet()).isNotNull();
-    }
+//    @Test
+//    void importMnemonic() throws UnknownHostException, BlockStoreException {
+//        BitcoinSecretKey secretKey = extractor.extract(new BitcoinMnemonicExtractionRequest("picnic such web toilet weekend inspire clown shine tourist label stereo leg", ""));
+//
+//        assertThat(secretKey.getWallet()).isNotNull();
+//    }
 }

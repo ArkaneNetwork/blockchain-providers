@@ -5,13 +5,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import network.arkane.provider.chain.SecretType;
 import network.arkane.provider.wallet.domain.SecretKey;
-import org.bitcoinj.wallet.Wallet;
+import org.bitcoinj.core.ECKey;
+
 
 @Data
 @NoArgsConstructor
 public class BitcoinSecretKey implements SecretKey {
 
-    private Wallet wallet;
+    private ECKey key;
 
     @Override
     public SecretType type() {
@@ -19,7 +20,7 @@ public class BitcoinSecretKey implements SecretKey {
     }
 
     @Builder
-    public BitcoinSecretKey(Wallet wallet) {
-        this.wallet = wallet;
+    public BitcoinSecretKey(ECKey key) {
+        this.key = key;
     }
 }

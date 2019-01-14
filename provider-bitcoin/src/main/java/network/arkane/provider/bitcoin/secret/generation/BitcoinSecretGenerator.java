@@ -4,7 +4,6 @@ import network.arkane.provider.chain.SecretType;
 import network.arkane.provider.secret.generation.SecretGenerator;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.wallet.Wallet;
 import org.springframework.stereotype.Component;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Keys;
@@ -12,23 +11,16 @@ import org.web3j.crypto.Keys;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.Collections;
 
 @Component
 public class BitcoinSecretGenerator implements SecretGenerator<BitcoinSecretKey> {
-
-    private final NetworkParameters networkParams;
-
-    public BitcoinSecretGenerator(NetworkParameters networkParams) {
-        this.networkParams = networkParams;
-    }
 
     @Override
     public BitcoinSecretKey generate() {
         try {
             final ECKeyPair ecKeyPair = Keys.createEcKeyPair();
-            Wallet wallet = Wallet.fromKeys(networkParams, Collections.singletonList(ECKey.fromPrivate(ecKeyPair.getPrivateKey())));
-            return new BitcoinSecretKey(wallet);
+            ECKey keyPair = ECKey.fromPrivate(ecKeyPair.getPrivateKey());
+            return new BitcoinSecretKey(keyPair);
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException(e);
         }

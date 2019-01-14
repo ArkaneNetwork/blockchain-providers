@@ -20,19 +20,20 @@ public class BitcoinMnemonicExtractor implements SecretExtractor<BitcoinMnemonic
 
     @Override
     public BitcoinSecretKey extract(BitcoinMnemonicExtractionRequest extractionRequest) {
-        try {
-            String passphrase = StringUtils.isBlank(extractionRequest.getPassphrase()) ? "" : extractionRequest.getPassphrase();
-            DeterministicSeed seed = new DeterministicSeed(
-                    extractionRequest.getMnemonic(),
-                    null,
-                    passphrase,
-                    System.currentTimeMillis());
-            return BitcoinSecretKey.builder()
-                                   .wallet(Wallet.fromSeed(networkParameters, seed))
-                                   .build();
-        } catch (UnreadableWalletException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            String passphrase = StringUtils.isBlank(extractionRequest.getPassphrase()) ? "" : extractionRequest.getPassphrase();
+//            DeterministicSeed seed = new DeterministicSeed(
+//                    extractionRequest.getMnemonic(),
+//                    null,
+//                    passphrase,
+//                    System.currentTimeMillis());
+//            return BitcoinSecretKey.builder()
+//                                   .wallet(Wallet.fromSeed(networkParameters, seed))
+//                                   .build();
+//        } catch (UnreadableWalletException e) {
+//            throw new RuntimeException(e);
+//        }
+        return null;
     }
 
     @Override
