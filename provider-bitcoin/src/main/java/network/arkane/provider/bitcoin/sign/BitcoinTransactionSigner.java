@@ -1,66 +1,114 @@
 package network.arkane.provider.bitcoin.sign;
 
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
+import network.arkane.provider.bitcoin.unspent.Unspent;
+import network.arkane.provider.bitcoin.unspent.UnspentService;
+import network.arkane.provider.exceptions.ArkaneException;
 import network.arkane.provider.sign.Signer;
 import network.arkane.provider.sign.domain.Signature;
 import org.apache.commons.codec.binary.Base64InputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.InsufficientMoneyException;
-import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.DumpedPrivateKey;
+import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.ScriptException;
+import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.Transaction;
-import org.bitcoinj.wallet.SendRequest;
+import org.bitcoinj.core.TransactionInput;
+import org.bitcoinj.core.TransactionOutPoint;
+import org.bitcoinj.crypto.TransactionSignature;
+import org.bitcoinj.params.TestNet3Params;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.wallet.UnreadableWalletException;
 import org.bitcoinj.wallet.Wallet;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
+import java.util.stream.IntStream;
 
-//https://medium.com/programmers-blockchain/creating-your-first-blockchain-with-java-part-2-transactions-2cdac335e0ce
-//https://github.com/ValleZ/Paper-Wallet
 @Component
+@Slf4j
 public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignable, BitcoinSecretKey> {
 
-    private NetworkParameters networkParameters;
+    private static final TestNet3Params NETWORK_PARAMS = TestNet3Params.get();
+    private UnspentService unspentService;
 
-    public BitcoinTransactionSigner(NetworkParameters networkParameters) {
-        this.networkParameters = networkParameters;
+    public BitcoinTransactionSigner(final UnspentService unspentService) {
+        this.unspentService = unspentService;
     }
 
     @Override
     public Signature createSignature(BitcoinTransactionSignable signable, BitcoinSecretKey key) {
-        Wallet wallet = key.getWallet();
-        wallet.reset();
-        Address address = Address.fromBase58(networkParameters, signable.getAddress());
-        Coin value = Coin.valueOf(signable.getSatoshiValue().longValue());
-        SendRequest sendRequest = SendRequest.to(address, value);
-        try {
-            wallet.completeTx(sendRequest);
-        } catch (InsufficientMoneyException e) {
-            e.printStackTrace();
-        }
-        wallet.signTransaction(sendRequest);
+        final DumpedPrivateKey privateKey = DumpedPrivateKey.fromBase58(NETWORK_PARAMS, "");
+        final Address fromAddress = new Address(NETWORK_PARAMS, privateKey.getKey().getPubKeyHash());
 
-        return null;
+        try {
+            final Transaction tx = new Transaction(NETWORK_PARAMS);
+            final Coin amount = Coin.valueOf(signable.getSatoshiValue().longValue());
+
+            tx.addOutput(amount, Address.fromBase58(NETWORK_PARAMS, privateKey.getKey().getPublicKeyAsHex()));
+            addInputsToTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, fetchUnspents(fromAddress), amount.value);
+            signInputsOfTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, privateKey.getKey());
+            tx.verify();
+            tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
+            return network.arkane.provider.sign.domain.TransactionSignature
+                    .signTransactionBuilder()
+                    .signedTransaction(Hex.encodeHexString(tx.bitcoinSerialize()))
+                    .build();
+        } catch (final Exception ex) {
+            log.error(ex.getMessage());
+            throw ArkaneException.arkaneException()
+                                 .errorCode("bitcoin.signing-error")
+                                 .message(String.format("An error occurred trying to sign the bitcoin transaction %s", ex.getMessage()))
+                                 .build();
+        }
     }
 
-    public void blah() {
-//        Address address2 = Address.fromBase58(networkParameters, address);
-//
-//        Transaction tx = new Transaction(params);
-//        //value is a sum of all inputs, fee is 4013
-//        tx.addOutput(Coin.valueOf(amount-4013), address2);
-//
-//        //utxos is an array of inputs from my wallet
-//        for(UTXO utxo : utxos)
-//        {
-//            TransactionOutPoint outPoint = new TransactionOutPoint(networkParameters, utxo.getIndex(), utxo.getHash());
-//            //YOU HAVE TO CHANGE THIS
-//            tx.addSignedInput(outPoint, utxo.getScript(), key, Transaction.SigHash.ALL, true);
-//        }
-//
-//        tx.getConfidence().setSource(TransactionConfidence.Source.SELF);
-//        tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
+    private List<Unspent> fetchUnspents(final Address address) {
+        return unspentService.getUnspentForAddress(address);
+    }
+
+    private void signInputsOfTransaction(Address sourceAddress, Transaction tx, ECKey key) {
+        IntStream.range(0, tx.getInputs().size()).forEach(i -> {
+            final Script scriptPubKey = ScriptBuilder.createOutputScript(sourceAddress);
+            final Sha256Hash hash = tx.hashForSignature(i, scriptPubKey, Transaction.SigHash.ALL, true);
+            final ECKey.ECDSASignature ecdsaSignature = key.sign(hash);
+            final TransactionSignature txSignature = new TransactionSignature(ecdsaSignature, Transaction.SigHash.ALL, true);
+            if (scriptPubKey.isSentToRawPubKey()) {
+                tx.getInput(i).setScriptSig(ScriptBuilder.createInputScript(txSignature));
+            } else {
+                if (!scriptPubKey.isSentToAddress()) {
+                    throw new ScriptException("Unable to sign this scriptPubKey: " + scriptPubKey);
+                }
+                tx.getInput(i).setScriptSig(ScriptBuilder.createInputScript(txSignature, key));
+            }
+        });
+    }
+
+    @SneakyThrows
+    private void addInputsToTransaction(Address sourceAddress, Transaction tx, List<Unspent> unspents, Long amount) {
+        long gatheredAmount = 0L;
+        long requiredAmount = amount + Transaction.DEFAULT_TX_FEE.value;
+        for (Unspent unspent : unspents) {
+            gatheredAmount += unspent.getAmount();
+            TransactionOutPoint outPoint = new TransactionOutPoint(NETWORK_PARAMS, unspent.getVOut(), Sha256Hash.wrap(unspent.getTxId()));
+            TransactionInput transactionInput = new TransactionInput(NETWORK_PARAMS, tx, Hex.decodeHex(unspent.getScriptPubKey()),
+                                                                     outPoint, Coin.valueOf(unspent.getAmount()));
+            tx.addInput(transactionInput);
+
+            if (gatheredAmount >= requiredAmount) {
+                break;
+            }
+        }
+        if (gatheredAmount > requiredAmount) {
+            //return change to sender, in real life it should use different address
+            tx.addOutput(Coin.valueOf((gatheredAmount - requiredAmount)), sourceAddress);
+        }
     }
 
     @Override
@@ -75,47 +123,4 @@ public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignab
             throw new RuntimeException(e);
         }
     }
-
-//    public void yan() {
-//        final SimpleSpendTransactionBuilder builder = new SimpleSpendTransactionBuilder();
-//        builder.sendToRecipient(Value.fromString("0.1BTC"), Address.fromAddressString("12rsrcBjfx3wKxb4VNK5Ajt1JMVVYz3SYr"));
-//        builder.sendToRecipient(Value.fromString("5mBTC"), Address.fromAddressString( "15hKjJscmhquUvoHT997Mehq6sYpvjNHNb"));
-//        builder.
-//        final Transaction trans = builder.build();
-//    }
-    //    private static final String DEFAULT_DATA = "0x";
-    //
-    //    private EthereumWalletDecryptor ethereumWalletDecryptor;
-    //
-    //    public BitcoinTransactionSigner(final EthereumWalletDecryptor ethereumWalletDecryptor) {
-    //        this.ethereumWalletDecryptor = ethereumWalletDecryptor;
-    //    }
-    //
-    //    @Override
-    //    public Signature createSignature(EthereumTransactionSignable signable, EthereumSecretKey key) {
-    //        final org.web3j.crypto.RawTransaction rawTransaction = constructTransaction(signable);
-    //        byte[] encodedMessage = TransactionEncoder.signMessage(rawTransaction, Credentials.create(key.getKeyPair()));
-    //        final String prettify = BytesUtils.withHexPrefix(Hex.toHexString(encodedMessage), Prefix.ZeroLowerX);
-    //        return TransactionSignature
-    //                .signTransactionBuilder()
-    //                .signedTransaction(prettify)
-    //                .build();
-    //    }
-    //
-    //    @Override
-    //    public EthereumSecretKey reconstructKey(String secret, String password) {
-    //        return ethereumWalletDecryptor.generateKey(GeneratedEthereumWallet.builder()
-    //                                                                          .walletFile(JSONUtil.fromJson(secret, WalletFile.class))
-    //                                                                          .build(), password);
-    //    }
-    //
-    //    private org.web3j.crypto.RawTransaction constructTransaction(final EthereumTransactionSignable signTransactionRequest) {
-    //        return org.web3j.crypto.RawTransaction.createTransaction(
-    //                signTransactionRequest.getNonce(),
-    //                signTransactionRequest.getGasPrice(),
-    //                signTransactionRequest.getGasLimit(),
-    //                signTransactionRequest.getTo(),
-    //                signTransactionRequest.getValue(),
-    //                StringUtils.isBlank(signTransactionRequest.getData()) ? DEFAULT_DATA : signTransactionRequest.getData());
-    //    }
 }
