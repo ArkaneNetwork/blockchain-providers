@@ -7,5 +7,5 @@ package network.arkane.provider.chain;
  * - VECHAIN
  */
 public enum SecretType {
-    ETHEREUM, VECHAIN
+    ETHEREUM, VECHAIN, BITCOIN
 }
