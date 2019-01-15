@@ -46,34 +46,43 @@ public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignab
     }
 
     @Override
-    public Signature createSignature(BitcoinTransactionSignable signable, BitcoinSecretKey key) {
-        final DumpedPrivateKey privateKey = DumpedPrivateKey.fromBase58(NETWORK_PARAMS, "");
-        final Address fromAddress = new Address(NETWORK_PARAMS, privateKey.getKey().getPubKeyHash());
-
+    public Signature createSignature(BitcoinTransactionSignable signable, BitcoinSecretKey secretKey) {
+        final ECKey key = DumpedPrivateKey.fromBase58(NETWORK_PARAMS, "92JYtSuKyhrG1fVgtBXUQgT8yNGs6XFFCjz1XLCwg8jFM95GHB6").getKey();
+        final Address fromAddress = new Address(NETWORK_PARAMS, key.getPubKeyHash());
         try {
             final Transaction tx = new Transaction(NETWORK_PARAMS);
             final Coin amount = Coin.valueOf(signable.getSatoshiValue().longValue());
 
-            tx.addOutput(amount, Address.fromBase58(NETWORK_PARAMS, privateKey.getKey().getPublicKeyAsHex()));
+            tx.addOutput(amount, new Address(NETWORK_PARAMS, key.getPubKeyHash()));
             addInputsToTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, fetchUnspents(fromAddress), amount.value);
-            signInputsOfTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, privateKey.getKey());
+            signInputsOfTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, key);
             tx.verify();
             tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
             return network.arkane.provider.sign.domain.TransactionSignature
                     .signTransactionBuilder()
                     .signedTransaction(Hex.encodeHexString(tx.bitcoinSerialize()))
                     .build();
+        } catch (final ArkaneException ex) {
+            log.error(ex.getMessage());
+            throw ex;
         } catch (final Exception ex) {
             log.error(ex.getMessage());
             throw ArkaneException.arkaneException()
                                  .errorCode("bitcoin.signing-error")
-                                 .message(String.format("An error occurred trying to sign the bitcoin transaction %s", ex.getMessage()))
+                                 .message(String.format("An error occurred trying to sign the bitcoin transaction: %s", ex.getMessage()))
                                  .build();
         }
     }
 
     private List<Unspent> fetchUnspents(final Address address) {
-        return unspentService.getUnspentForAddress(address);
+        final List<Unspent> unspentForAddress = unspentService.getUnspentForAddress(address);
+        if (unspentForAddress.isEmpty()) {
+            throw ArkaneException.arkaneException()
+                                 .errorCode("bitcoin.signing-inputs")
+                                 .message(String.format("The account you're trying to sign with doesn't have valid inputs to send the transaction"))
+                                 .build();
+        }
+        return unspentForAddress;
     }
 
     private void signInputsOfTransaction(Address sourceAddress, Transaction tx, ECKey key) {
@@ -108,6 +117,13 @@ public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignab
                 break;
             }
         }
+        if (gatheredAmount < requiredAmount) {
+            throw ArkaneException.arkaneException()
+                                 .errorCode("bitcoin.not-enough-funds")
+                                 .message(String.format("Not enough funds to send the transaction"))
+                                 .build();
+        }
+
         if (gatheredAmount > requiredAmount) {
             //return change to sender, in real life it should use different address
             tx.addOutput(Coin.valueOf((gatheredAmount - requiredAmount)), sourceAddress);
