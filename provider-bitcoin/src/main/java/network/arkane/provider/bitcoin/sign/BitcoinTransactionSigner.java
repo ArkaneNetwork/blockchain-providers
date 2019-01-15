@@ -15,7 +15,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.ScriptException;
 import org.bitcoinj.core.Sha256Hash;
@@ -47,15 +46,14 @@ public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignab
 
     @Override
     public Signature createSignature(BitcoinTransactionSignable signable, BitcoinSecretKey secretKey) {
-        final ECKey key = DumpedPrivateKey.fromBase58(NETWORK_PARAMS, "92JYtSuKyhrG1fVgtBXUQgT8yNGs6XFFCjz1XLCwg8jFM95GHB6").getKey();
-        final Address fromAddress = new Address(NETWORK_PARAMS, key.getPubKeyHash());
+        final Address fromAddress = new Address(NETWORK_PARAMS, secretKey.getKey().getPubKeyHash());
         try {
             final Transaction tx = new Transaction(NETWORK_PARAMS);
             final Coin amount = Coin.valueOf(signable.getSatoshiValue().longValue());
 
-            tx.addOutput(amount, new Address(NETWORK_PARAMS, key.getPubKeyHash()));
+            tx.addOutput(amount, new Address(NETWORK_PARAMS, secretKey.getKey().getPubKeyHash()));
             addInputsToTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, fetchUnspents(fromAddress), amount.value);
-            signInputsOfTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, key);
+            signInputsOfTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, secretKey.getKey());
             tx.verify();
             tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
             return network.arkane.provider.sign.domain.TransactionSignature

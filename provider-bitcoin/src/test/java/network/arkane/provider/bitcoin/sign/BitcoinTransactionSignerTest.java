@@ -84,4 +84,5 @@ class BitcoinTransactionSignerTest {
                                                                                     .build())).hasMessageContaining("Not enough funds to send the transaction");
 
     }
+
 }
