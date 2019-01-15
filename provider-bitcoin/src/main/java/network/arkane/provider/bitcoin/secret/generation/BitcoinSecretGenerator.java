@@ -2,6 +2,7 @@ package network.arkane.provider.bitcoin.secret.generation;
 
 import network.arkane.provider.chain.SecretType;
 import network.arkane.provider.secret.generation.SecretGenerator;
+import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 import org.springframework.stereotype.Component;

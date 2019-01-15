@@ -18,12 +18,12 @@ class BitcoinPrivateKeyExtractorTest {
         extractor = new BitcoinPrivateKeyExtractor(TestNet3Params.get());
     }
 
-//    @Test
-//    void extract() {
-//        String privateKey = "Kxt4AVyCSCXnpDWhRS5JpRxw2PMkGn25yY4JxCJL3KzwUj2JJhrE";
-//        BitcoinSecretKey result = extractor.extract(new BitcoinPrivateKeyExtractionRequest(privateKey));
-//
-//        assertThat(result.getWallet()).isNotNull();
-//    }
+    @Test
+    void extract() {
+        String privateKey = "92Pg46rUhgTT7romnV7iGW6W1gbGdeezqdbJCzShkCsYNzyyNcc";
+        BitcoinSecretKey result = extractor.extract(new BitcoinPrivateKeyExtractionRequest(privateKey));
+
+        assertThat(result.getKey().getPrivateKeyAsWiF(TestNet3Params.get())).isEqualTo(privateKey);
+    }
 
 }
