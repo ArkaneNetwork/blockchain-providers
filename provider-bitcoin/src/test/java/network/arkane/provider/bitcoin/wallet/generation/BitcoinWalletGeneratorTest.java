@@ -42,36 +42,21 @@ class BitcoinWalletGeneratorTest {
         String password = "flqksjfqklm";
 
         BitcoinSecretKey secretKey = new BitcoinSecretGenerator().generate();
-        System.out.println(secretKey.getKey().getPrivateKeyAsHex());
 
         GeneratedBitcoinWallet wallet = walletGenerator.generateWallet(password,
                                                                        secretKey);
 
         String secret = wallet.secretAsBase64();
         BitcoinKeystore ed = JSONUtil.fromJson(new String(Base64.decodeBase64(secret)), BitcoinKeystore.class);
-        Protos.ScryptParameters params = Protos.ScryptParameters.newBuilder().setSalt(ByteString.copyFrom("".getBytes())).build();
+        Protos.ScryptParameters params = Protos.ScryptParameters.newBuilder().setSalt(ByteString.copyFrom(ed.getSalt())).build();
         KeyCrypterScrypt crypter = new KeyCrypterScrypt(params);
         EncryptedData encryptedData = new EncryptedData(ed.getInitialisationVector(), ed.getEncryptedBytes());
         ECKey ecKey = ECKey.fromEncrypted(encryptedData, crypter, ed.getPubKey());
         ECKey unencrypted = ecKey.decrypt(crypter.deriveKey(password));
 
 
-        System.out.println(unencrypted.getPrivateKeyAsHex());
+        assertThat(unencrypted.getPrivateKeyAsHex()).isEqualTo(secretKey.getKey().getPrivateKeyAsHex());
 
-        //        ECKey.fromEncrypted(privateKey)
     }
 
-
-    @Test
-    void blah() {
-        //
-        //        ECKey k1 = new ECKey(); // some random key
-        //
-        //        // encrypting a key
-        //        KeyCrypter crypter1 = new KeyCrypterScrypt();
-        //        KeyParameter aesKey1 = crypter1.deriveKey("some arbitrary passphrase");
-        //        ECKey k2 = k1.encrypt(crypter1, aesKey1);
-        //        ECKey.fromEncrypted());
-        //        System.out.println(k2.isEncrypted()); // true
-    }
 }

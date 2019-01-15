@@ -2,12 +2,9 @@ package network.arkane.provider.bitcoin.extraction;
 
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
 import network.arkane.provider.wallet.extraction.SecretExtractor;
-import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.wallet.Wallet;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
 
 @Component
 public class BitcoinPrivateKeyExtractor implements SecretExtractor<BitcoinPrivateKeyExtractionRequest> {
@@ -20,12 +17,11 @@ public class BitcoinPrivateKeyExtractor implements SecretExtractor<BitcoinPrivat
 
     @Override
     public BitcoinSecretKey extract(BitcoinPrivateKeyExtractionRequest extractionRequest) {
-//        Wallet wallet = Wallet.fromKeys(networkParameters,
-//                                        Collections.singletonList(ECKey.fromPrivate(extractionRequest.getPrivateKey().getBytes())));
-//        return BitcoinSecretKey.builder()
-//                               .wallet(wallet)
-//                               .build();
-        return null;
+        DumpedPrivateKey dumpedPrivateKey = DumpedPrivateKey.fromBase58(networkParameters, extractionRequest.getPrivateKey());
+
+        return BitcoinSecretKey.builder()
+                               .key(dumpedPrivateKey.getKey())
+                               .build();
     }
 
     @Override
