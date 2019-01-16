@@ -26,8 +26,9 @@ public class BitcoinWalletGenerator implements WalletGenerator<BitcoinSecretKey>
         }
 
         byte[] salt = KeyCrypterScrypt.randomSalt();
+
+        ECKey encryptedEcKey = encrypt(secret.getKey(), password, salt);
         SegwitAddress segwitAddress = new SegwitAddress(secret.getKey(), networkParams);
-        ECKey encryptedEcKey = encrypt(segwitAddress.getECKey(), password, salt);
         return GeneratedBitcoinWallet.builder()
                                      .address(segwitAddress.getAddress().toBase58())
                                      .secret(new BitcoinKeystore(encryptedEcKey.getPubKey(),

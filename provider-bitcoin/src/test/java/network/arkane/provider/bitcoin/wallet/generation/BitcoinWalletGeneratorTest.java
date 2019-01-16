@@ -8,6 +8,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.crypto.EncryptedData;
 import org.bitcoinj.crypto.KeyCrypterScrypt;
+import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.wallet.Protos;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +24,7 @@ class BitcoinWalletGeneratorTest {
 
     @BeforeEach
     void setUp() {
-        walletGenerator = new BitcoinWalletGenerator(TestNet3Params.get());
+        walletGenerator = new BitcoinWalletGenerator(MainNetParams.get());
     }
 
     @Test
@@ -33,6 +34,8 @@ class BitcoinWalletGeneratorTest {
                                                                        new BitcoinSecretGenerator().generate());
 
         assertThat(wallet.getAddress()).isNotBlank();
+        assertThat(wallet.getAddress()).startsWith("3");
+
         assertThat(wallet.secretAsBase64()).isNotBlank();
 
     }
