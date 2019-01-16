@@ -2,8 +2,10 @@ package network.arkane.provider.bitcoin.wallet.generation;
 
 import com.google.protobuf.ByteString;
 import network.arkane.provider.JSONUtil;
+import network.arkane.provider.bitcoin.BitcoinEnv;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretGenerator;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
+import network.arkane.provider.sochain.domain.Network;
 import org.apache.commons.codec.binary.Base64;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.crypto.EncryptedData;
@@ -24,7 +26,7 @@ class BitcoinWalletGeneratorTest {
 
     @BeforeEach
     void setUp() {
-        walletGenerator = new BitcoinWalletGenerator(TestNet3Params.get());
+        walletGenerator = new BitcoinWalletGenerator(new BitcoinEnv(Network.BTCTEST, TestNet3Params.get()));
     }
 
     @Test

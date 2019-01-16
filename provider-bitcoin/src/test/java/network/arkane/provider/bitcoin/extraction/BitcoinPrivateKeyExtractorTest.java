@@ -1,6 +1,8 @@
 package network.arkane.provider.bitcoin.extraction;
 
+import network.arkane.provider.bitcoin.BitcoinEnv;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
+import network.arkane.provider.sochain.domain.Network;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Base58;
 import org.bitcoinj.params.TestNet3Params;
@@ -15,7 +17,7 @@ class BitcoinPrivateKeyExtractorTest {
 
     @BeforeEach
     void setUp() {
-        extractor = new BitcoinPrivateKeyExtractor(TestNet3Params.get());
+        extractor = new BitcoinPrivateKeyExtractor(new BitcoinEnv(Network.BTCTEST, TestNet3Params.get()));
     }
 
     @Test

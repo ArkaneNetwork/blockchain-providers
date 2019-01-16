@@ -1,6 +1,7 @@
 package network.arkane.provider.bitcoin.wallet.generation;
 
 import com.google.protobuf.ByteString;
+import network.arkane.provider.bitcoin.BitcoinEnv;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
 import network.arkane.provider.wallet.generation.WalletGenerator;
 import org.bitcoinj.core.ECKey;
@@ -15,8 +16,8 @@ public class BitcoinWalletGenerator implements WalletGenerator<BitcoinSecretKey>
 
     private NetworkParameters networkParams;
 
-    public BitcoinWalletGenerator(NetworkParameters networkParams) {
-        this.networkParams = networkParams;
+    public BitcoinWalletGenerator(BitcoinEnv bitcoinEnv) {
+        this.networkParams = bitcoinEnv.getNetworkParameters();
     }
 
     @Override

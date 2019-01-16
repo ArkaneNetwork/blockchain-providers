@@ -1,5 +1,6 @@
 package network.arkane.provider.bitcoin.extraction;
 
+import network.arkane.provider.bitcoin.BitcoinEnv;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
 import network.arkane.provider.wallet.extraction.SecretExtractor;
 import org.bitcoinj.core.DumpedPrivateKey;
@@ -11,8 +12,8 @@ public class BitcoinPrivateKeyExtractor implements SecretExtractor<BitcoinPrivat
 
     private NetworkParameters networkParameters;
 
-    public BitcoinPrivateKeyExtractor(NetworkParameters networkParameters) {
-        this.networkParameters = networkParameters;
+    public BitcoinPrivateKeyExtractor(BitcoinEnv bitcoinEnv) {
+        this.networkParameters = bitcoinEnv.getNetworkParameters();
     }
 
     @Override

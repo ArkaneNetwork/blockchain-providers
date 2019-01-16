@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import network.arkane.provider.JSONUtil;
+import network.arkane.provider.bitcoin.BitcoinEnv;
 import network.arkane.provider.bitcoin.secret.generation.BitcoinSecretKey;
 import network.arkane.provider.bitcoin.unspent.Unspent;
 import network.arkane.provider.bitcoin.unspent.UnspentService;
@@ -16,6 +17,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.ScriptException;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.Transaction;
@@ -24,7 +26,6 @@ import org.bitcoinj.core.TransactionOutPoint;
 import org.bitcoinj.crypto.EncryptedData;
 import org.bitcoinj.crypto.KeyCrypterScrypt;
 import org.bitcoinj.crypto.TransactionSignature;
-import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.wallet.Protos;
@@ -37,23 +38,24 @@ import java.util.stream.IntStream;
 @Slf4j
 public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignable, BitcoinSecretKey> {
 
-    private static final TestNet3Params NETWORK_PARAMS = TestNet3Params.get();
+    private NetworkParameters networkParameters;
     private UnspentService unspentService;
 
-    public BitcoinTransactionSigner(final UnspentService unspentService) {
+    public BitcoinTransactionSigner(BitcoinEnv bitcoinEnv, UnspentService unspentService) {
         this.unspentService = unspentService;
+        this.networkParameters = bitcoinEnv.getNetworkParameters();
     }
 
     @Override
     public Signature createSignature(BitcoinTransactionSignable signable, BitcoinSecretKey secretKey) {
-        final Address fromAddress = new Address(NETWORK_PARAMS, secretKey.getKey().getPubKeyHash());
+        final Address fromAddress = new Address(networkParameters, secretKey.getKey().getPubKeyHash());
         try {
-            final Transaction tx = new Transaction(NETWORK_PARAMS);
+            final Transaction tx = new Transaction(networkParameters);
             final Coin amount = Coin.valueOf(signable.getSatoshiValue().longValue());
 
-            tx.addOutput(amount, new Address(NETWORK_PARAMS, secretKey.getKey().getPubKeyHash()));
-            addInputsToTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, fetchUnspents(fromAddress), amount.value);
-            signInputsOfTransaction(Address.fromBase58(NETWORK_PARAMS, fromAddress.toBase58()), tx, secretKey.getKey());
+            tx.addOutput(amount, new Address(networkParameters, secretKey.getKey().getPubKeyHash()));
+            addInputsToTransaction(Address.fromBase58(networkParameters, fromAddress.toBase58()), tx, fetchUnspents(fromAddress), amount.value);
+            signInputsOfTransaction(Address.fromBase58(networkParameters, fromAddress.toBase58()), tx, secretKey.getKey());
             tx.verify();
             tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
             return network.arkane.provider.sign.domain.TransactionSignature
@@ -106,8 +108,8 @@ public class BitcoinTransactionSigner implements Signer<BitcoinTransactionSignab
         long requiredAmount = amount + Transaction.DEFAULT_TX_FEE.value;
         for (Unspent unspent : unspents) {
             gatheredAmount += unspent.getAmount();
-            TransactionOutPoint outPoint = new TransactionOutPoint(NETWORK_PARAMS, unspent.getVOut(), Sha256Hash.wrap(unspent.getTxId()));
-            TransactionInput transactionInput = new TransactionInput(NETWORK_PARAMS, tx, Hex.decodeHex(unspent.getScriptPubKey()),
+            TransactionOutPoint outPoint = new TransactionOutPoint(networkParameters, unspent.getVOut(), Sha256Hash.wrap(unspent.getTxId()));
+            TransactionInput transactionInput = new TransactionInput(networkParameters, tx, Hex.decodeHex(unspent.getScriptPubKey()),
                                                                      outPoint, Coin.valueOf(unspent.getAmount()));
             tx.addInput(transactionInput);
 
