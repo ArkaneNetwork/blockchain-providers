@@ -16,6 +16,8 @@
         <module>provider-autoconfiguration</module>
         <module>provider-vechain</module>
         <module>provider-ethereum</module>
+        <module>provider-bitcoin</module>
+        <module>sochain</module>
     </modules>
 
     <distributionManagement>
