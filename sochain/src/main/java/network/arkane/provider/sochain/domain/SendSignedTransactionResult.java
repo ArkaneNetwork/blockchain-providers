@@ -9,6 +9,14 @@ public class SendSignedTransactionResult {
     @JsonProperty("tx_hex")
     private String transactionId;
 
+    public SendSignedTransactionResult() {
+    }
+
+    public SendSignedTransactionResult(String network, String transactionId) {
+        this.network = network;
+        this.transactionId = transactionId;
+    }
+
     public String getNetwork() {
         return network;
     }
