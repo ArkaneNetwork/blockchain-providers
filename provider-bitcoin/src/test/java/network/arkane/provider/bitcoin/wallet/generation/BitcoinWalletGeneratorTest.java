@@ -34,8 +34,6 @@ class BitcoinWalletGeneratorTest {
                                                                        new BitcoinSecretGenerator().generate());
 
         assertThat(wallet.getAddress()).isNotBlank();
-        assertThat(wallet.getAddress()).startsWith("3");
-
         assertThat(wallet.secretAsBase64()).isNotBlank();
 
     }
