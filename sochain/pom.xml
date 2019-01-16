@@ -10,7 +10,7 @@
         <version>0.0.5-SNAPSHOT</version>
     </parent>
 
-    <artifactId>chainso</artifactId>
+    <artifactId>sochain</artifactId>
 
     <properties>
         <feign.version>10.1.0</feign.version>

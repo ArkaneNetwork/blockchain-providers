@@ -24,7 +24,7 @@ class BitcoinWalletGeneratorTest {
 
     @BeforeEach
     void setUp() {
-        walletGenerator = new BitcoinWalletGenerator(MainNetParams.get());
+        walletGenerator = new BitcoinWalletGenerator(TestNet3Params.get());
     }
 
     @Test

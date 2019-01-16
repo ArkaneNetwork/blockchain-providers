@@ -24,6 +24,12 @@
         </dependency>
 
         <dependency>
+            <groupId>network.arkane</groupId>
+            <artifactId>sochain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.bitcoinj</groupId>
             <artifactId>bitcoinj-core</artifactId>
             <version>${bitcoinj.version}</version>
