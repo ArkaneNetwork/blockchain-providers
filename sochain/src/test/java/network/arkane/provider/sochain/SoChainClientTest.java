@@ -6,6 +6,7 @@ import network.arkane.provider.sochain.domain.SoChainResult;
 import network.arkane.provider.sochain.domain.SendSignedTransactionRequest;
 import network.arkane.provider.sochain.domain.Transactions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConvertersAutoConfiguration;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled
 class SoChainClientTest {
 
     private static SoChainClient client;
