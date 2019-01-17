@@ -11,4 +11,5 @@ import java.math.BigInteger;
 public class BitcoinTransactionSignable implements Signable {
     private String address;
     private BigInteger satoshiValue;
+    private int feePerByte;
 }
