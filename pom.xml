@@ -52,7 +52,7 @@
         <web3j.version>4.1.1</web3j.version>
         <commons-lang3.version>3.7</commons-lang3.version>
         <commons-codec.version>1.11</commons-codec.version>
-        <jackson.version>2.9.8</jackson.version>
+        <jackson.version>2.9.10.1</jackson.version>
         <lombok.version>1.18.0</lombok.version>
         <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
