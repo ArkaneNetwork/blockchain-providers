@@ -81,7 +81,7 @@ class EthereumNonFungibleGatewayTest {
     void getNonFungibleContract() {
         final String contractAddress = "42d91cf8-c41a-4285-8aa8-fdf3082882eb";
         final AssetContract assetContract = new AssetContract(null, null, null, null, null, null);
-        final NonFungibleContract nonFungibleContract = new NonFungibleContract(null, null, null, null, null, null, null, "ERC_721", false, false, null);
+        final NonFungibleContract nonFungibleContract = new NonFungibleContract(null, null, null, null, null, null, null, null, "ERC_721", false, false, null);
 
         when(openSeaGateway.getContract(contractAddress)).thenReturn(assetContract);
 
