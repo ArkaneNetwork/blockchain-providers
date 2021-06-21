@@ -26,6 +26,7 @@ public class NonFungibleContract {
     @JsonAlias("image")
     private String imageUrl;
     private JsonNode media;
+    private String banner;
     private String type;
     private boolean verified;
     private boolean premium;

@@ -143,7 +143,7 @@ public abstract class AzraelNonFungibleStrategy implements EvmNonFungibleStrateg
                                    .imagePreviewUrl(imageUrl)
                                    .imageThumbnailUrl(imageUrl)
                                    .id(tokenId)
-                                   .contract(parseContract(contract, metaData))
+                                   .contract(enrichContract(contract, metaData))
                                    .description(metaData.getDescription())
                                    .url(metaData.getExternalUrl().orElse(null))
                                    .maxSupply(metaData.getMaxSupply().map(BigInteger::new).orElse(null))
@@ -160,8 +160,8 @@ public abstract class AzraelNonFungibleStrategy implements EvmNonFungibleStrateg
                                .build();
     }
 
-    private NonFungibleContract parseContract(NonFungibleContract contract,
-                                              NonFungibleMetaData metaData) {
+    private NonFungibleContract enrichContract(NonFungibleContract contract,
+                                               NonFungibleMetaData metaData) {
         NonFungibleContract result = contract.toBuilder().build();
         metaData.getContract().ifPresent(c -> {
             if (StringUtils.isNotBlank(c.getDescription())) {
@@ -184,6 +184,9 @@ public abstract class AzraelNonFungibleStrategy implements EvmNonFungibleStrateg
             }
             if (StringUtils.isNotBlank(c.getUrl())) {
                 result.setUrl(c.getUrl());
+            }
+            if (StringUtils.isNotBlank(c.getBanner())) {
+                result.setBanner(c.getBanner());
             }
         });
         return result;
